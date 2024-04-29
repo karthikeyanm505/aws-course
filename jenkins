@@ -1,0 +1,43 @@
+pipeline{
+    agent any
+    tools{
+        jdk 'jdk17'
+        nodejs 'node16'
+    }
+    
+    stages {
+        stage('clean workspace'){
+            steps{
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git'){
+            steps{
+                git branch: 'main', url: 'https://github.com/iam-jerry22/reddit-clone-k8s.git'
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                sh "npm install"
+            }
+        }
+       
+        stage("Docker Build & Push"){
+            steps{
+                script{
+                   withDockerRegistry(credentialsId: '6ee78440-6a9e-42fc-8bb0-8dc24169db3c', toolName: 'docker'){
+                       sh "docker build -t reddit ."
+                       sh "docker tag reddit nivasheart22/reddit:latest "
+                       sh "docker push nivasheart22/reddit:latest "
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to container'){
+            steps{
+                sh 'docker run -d --name reddit -p 3000:3000 nivasheart22/reddit:latest'
+            }
+        }
+    }
+}
